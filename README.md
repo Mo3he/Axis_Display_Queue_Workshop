@@ -95,6 +95,9 @@ Before adding MQTT nodes, you need to configure the broker connection that your 
    - **Port**: `1883`
 5. Leave all other settings at defaults (no TLS, no authentication)
 6. Click **Add**
+
+![Broker configuration dialog](images/broker-config.png)
+
 7. You are now back in the MQTT node settings - do not close it yet (continue to the next step)
 
 ### Step 2.3 - Configure the Queue Topic Subscription
@@ -125,6 +128,8 @@ Before building the full pipeline, let's confirm MQTT messages are arriving.
 8. You should see JSON arrays arriving every few seconds, e.g. `[3, 7, 12]`
 
 > If nothing appears after 10 seconds, check that the MQTT node shows a green "connected" status below it. If it shows "disconnected", double-click the node and verify the broker settings.
+
+![MQTT node showing green connected status](images/mqtt-connected.png)
 
 ### Step 2.5 - Add the Function Node (Build Queue Message)
 
@@ -185,6 +190,8 @@ This node sends the formatted payload to your speaker.
    - **Password**: your speaker password
    - **Return**: select `a parsed JSON object`
 3. Click **Done**
+
+![HTTP request node configuration](images/http-request-config.png)
 
 ### Step 2.7 - Add a Response Debug Node
 
