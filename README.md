@@ -211,13 +211,20 @@ This node sends the formatted payload to your speaker.
 
 Delete the old wire from the MQTT node to the debug node (click the wire, press Delete).
 
-Now rewire your nodes in sequence, reusing the **Queue debug** node between the function and the HTTP request so you can see the formatted payload:
+Now wire the nodes. Debug nodes are terminal (they display messages but do not forward them), so you need to branch the output of the function node to both the debug and the HTTP request:
 
 ```
-[Queue topic] --> [Build queue message] --> [Queue debug] --> [POST to speaker display] --> [API response]
+                                          +--> [Queue debug]
+[Queue topic] --> [Build queue message] --+
+                                          +--> [POST to speaker display] --> [API response]
 ```
 
-Click from the output (right dot) of each node to the input (left dot) of the next. You now have two debug nodes: one showing what you send, one showing the speaker's response.
+To create this fan-out wiring:
+1. Click the output (right dot) of **Build queue message** and drag to the input of **POST to speaker display**
+2. Click the output of **Build queue message** again and drag a second wire to the input of **Queue debug**
+3. Click the output of **POST to speaker display** and drag to the input of **API response**
+
+You now have two debug nodes: **Queue debug** shows the formatted payload you are sending, and **API response** shows what the speaker replied.
 
 ### Step 2.9 - Deploy and Test the Queue Display
 
