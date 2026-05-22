@@ -1,5 +1,13 @@
 # Axis Display Speaker - Queue Display Workshop
 
+## Introduction
+
+In this hands-on workshop you will build a live information display system using an Axis network speaker with a built-in screen. Starting from a blank Node-RED canvas, you will wire together MQTT subscriptions, data formatting logic, and HTTP API calls to push real-time content to the display. No pre-built flows are provided - you will construct every node and connection yourself.
+
+The scenario is a restaurant order queue: customers place orders, the kitchen prepares them, and the display keeps everyone informed. Along the way you will learn how VAPIX works, how to coordinate multiple data sources with flow context, and how to repurpose the same pattern for sensor data.
+
+---
+
 Build a restaurant-style order queue system from scratch in Node-RED. You will subscribe to live queue state over MQTT and drive an Axis Display Speaker using the VAPIX Speaker Display Notification API.
 
 By the end of this workshop your speaker will display:
