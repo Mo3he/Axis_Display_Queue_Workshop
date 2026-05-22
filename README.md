@@ -515,40 +515,41 @@ This node calls Google Translate TTS and returns raw MP3 audio in `msg.payload`.
 3. Paste this code:
 
 ```javascript
-const boundary = '----NodeREDFormBoundary';
-const filename = 'tts_announcement.mp3';
+var boundary = "----NodeREDFormBoundary";
+var filename = "tts_announcement.mp3";
 
 // Wrap MP3 binary in a multipart form body
-const header = Buffer.from(
-    `--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
-    `Content-Type: audio/mpeg\r\n\r\n`
+var header = Buffer.from(
+    "--" + boundary + "\r\n" +
+    "Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n" +
+    "Content-Type: audio/mpeg\r\n\r\n"
 );
-const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
+var footer = Buffer.from("\r\n--" + boundary + "--\r\n");
 
 msg.payload = Buffer.concat([header, msg.payload, footer]);
 msg.headers = {
-    'Content-Type': `multipart/form-data; boundary=${boundary}`
+    "Content-Type": "multipart/form-data; boundary=" + boundary
 };
-msg.url = 'http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=upload';
-msg.method = 'POST';
+
+// Clear stale url from previous node
+delete msg.url;
 
 return msg;
 ```
 
-4. Replace `<speaker-ip>` with your speaker's IP address
-5. Click **Done**
+4. Click **Done**
 
 ### Step 4.5 - Upload to Speaker
 
 1. Drag an **http request** node and connect it after Build Upload
 2. Configure:
    - **Method:** POST
-   - **URL:** leave blank (set by msg.url)
+   - **URL:** `http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=upload`
    - **Return:** a UTF-8 string
    - **Authentication:** Digest
    - **Username / Password:** your speaker credentials
-3. Click **Done**
+3. Replace `<speaker-ip>` with your speaker's IP address
+4. Click **Done**
 
 ### Step 4.6 - Parse Clip ID and Play
 
@@ -558,19 +559,19 @@ return msg;
 
 ```javascript
 // Response is "OK\nUploaded=3" or "OK\nReplaced=3"
-const response = msg.payload;
-const match = response.match(/(?:Uploaded|Replaced)=(\d+)/);
+var response = msg.payload;
+var match = response.match(/(?:Uploaded|Replaced)=(\d+)/);
 
 if (match) {
-    const clipId = match[1];
-    msg.url = `http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=play&clip=${clipId}`;
-    msg.method = 'GET';
-    msg.headers = {};
+    var clipId = match[1];
+    msg.url = "http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=play&clip=" + clipId;
     msg.payload = null;
+    // Clear stale headers from upload step
+    delete msg.headers;
     return msg;
 }
 
-node.error('Failed to parse clip ID from: ' + response);
+node.error("Failed to parse clip ID from: " + response);
 return null;
 ```
 
