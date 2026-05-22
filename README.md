@@ -236,11 +236,54 @@ Click from the output (right dot) of each node to the input (left dot) of the ne
 
 ---
 
-## Part 3: Add the "Order Ready" Alert
+## Part 3: Customize the Display
+
+Now that you have a working queue display, take a moment to experiment with its appearance. This part is quick and rewarding - you will see changes on the speaker in real time.
+
+### Step 3.1 - Change Colors
+
+1. Double-click **Build queue message**
+2. Edit the `backgroundColor` and `textColor` fields. Values are RGB hex strings:
+   - Dark blue (current): `#1A1A2E`
+   - Try navy: `#003366`, purple: `#4B0082`, dark green: `#1B4332`
+3. Click **Done** then **Deploy**
+
+### Step 3.2 - Change Scroll Behavior
+
+In the function node, modify these fields:
+
+| Field | Options |
+|---|---|
+| `scrollSpeed` | `0` (static) through `10` (fastest) |
+| `scrollDirection` | `fromRightToLeft`, `fromLeftToRight`, `fromBottomToTop` |
+| `textSize` | `small`, `medium`, `large` |
+
+Try setting `scrollSpeed` to `0` to get a static display (useful if the text is short enough to fit on screen).
+
+### Step 3.3 - Change the Message Format
+
+Edit the `text` variable in the function node:
+- Change `'PREPARING:  '` to `'NOW COOKING:  '` or `'IN PROGRESS:  '`
+
+### Step 3.4 - Add a Static Prefix
+
+Try displaying a restaurant name before the queue. Change the text line to:
+
+```javascript
+text = 'CAFE AXIS  |  PREPARING:  ' + numbers.map(function(n) {
+    return '#' + n;
+}).join('  ');
+```
+
+**Checkpoint:** Your display looks the way you want it. When you are done experimenting, revert to the original colors (white on dark blue) and text format before moving on, or keep your customizations - it is up to you.
+
+---
+
+## Part 4: Add the "Order Ready" Alert
 
 The ready alert temporarily overrides the queue display with a green "ORDER READY" message, then reverts back after 8 seconds.
 
-### Step 3.1 - Add a Second MQTT Subscription
+### Step 4.1 - Add a Second MQTT Subscription
 
 1. Drag another **mqtt in** node onto the canvas, below the queue row
 2. Double-click it and configure:
@@ -251,7 +294,7 @@ The ready alert temporarily overrides the queue display with a green "ORDER READ
    - **Output**: `a parsed JSON object`
 3. Click **Done**
 
-### Step 3.2 - Add the Ready Message Function Node
+### Step 4.2 - Add the Ready Message Function Node
 
 1. Drag a **function** node next to the Ready topic node
 2. Name it `Build ready message`
@@ -337,7 +380,7 @@ return msg;
 - `flow.set('showingReady', true)` is a flag so the queue node knows not to overwrite the ready alert
 - `node.send()` inside the timer lets the function node send a message asynchronously after the delay
 
-### Step 3.3 - Update the Queue Function to Respect the Ready Flag
+### Step 4.3 - Update the Queue Function to Respect the Ready Flag
 
 Now you need to modify **Build queue message** so it coordinates with the ready alert. Two changes are needed:
 
@@ -389,7 +432,7 @@ return null;
 - `flow.set('queueText', text)` - stores the latest queue text in flow-level shared context. Think of this as a variable that lives on the tab, accessible by any function node via `flow.get('queueText')`.
 - `if (!flow.get('showingReady'))` - checks whether the ready alert is active. If it is, we still save the queue text (so it is available for revert) but return `null`, which tells Node-RED not to pass the message onward.
 
-### Step 3.4 - Wire the Ready Nodes
+### Step 4.4 - Wire the Ready Nodes
 
 Wire the ready row:
 
@@ -399,7 +442,7 @@ Wire the ready row:
 
 The **Build ready message** output connects to the same **POST to speaker display** node that the queue function already uses. Multiple nodes can feed into one node.
 
-### Step 3.5 - Deploy and Test
+### Step 4.5 - Deploy and Test
 
 1. Click **Deploy**
 2. Watch the debug panel. You should see:
@@ -413,9 +456,19 @@ The **Build ready message** output connects to the same **POST to speaker displa
 
 **Checkpoint:** Both the queue display and the ready alert are working. The display alternates between the two states automatically.
 
+### Step 4.6 - Customize the Alert (Optional)
+
+Now that the ready alert works, you can tweak it:
+
+- **Change colors:** Edit `backgroundColor: '#00CC44'` in Build ready message (try `#FFD700` for gold, `#FF6347` for red)
+- **Change duration:** Find `}, 8000);` in the setTimeout call and change `8000` to your preferred milliseconds (5000 = 5s, 15000 = 15s). Also update `duration: { type: 'time', value: 8000 }` to match.
+- **Change text:** Change `'ORDER READY:  '` to `'PICK UP:  '`
+
 ---
 
-## Part 4: Voice Announcement (Text-to-Speech)
+## Part 5: Voice Announcement (Bonus)
+
+> This part is optional. It adds audio announcements for ready orders using text-to-speech. If you are short on time, skip to Part 6.
 
 The visual alert is great, but what if staff aren't watching the screen? In this part you will add an audio announcement that reads the order number aloud through the speaker. The approach uses a free Google Translate TTS endpoint to generate speech, uploads the audio clip to the speaker, then plays it.
 
@@ -428,7 +481,7 @@ restaurant/ready  -->  Build TTS URL  -->  Google TTS  -->  Upload MP3  -->  Pla
 
 The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch a speech MP3 from Google Translate, upload it to the device, then trigger playback. The function tracks which orders have already been announced so you only hear new ones.
 
-### Step 4.1 - Add MQTT Input
+### Step 5.1 - Add MQTT Input
 
 1. Drag an **mqtt in** node onto the canvas (you can create this on the same flow tab or a new one)
 2. Double-click and configure:
@@ -437,7 +490,7 @@ The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch
    - **Output:** String
 3. Click **Done**
 
-### Step 4.2 - Build TTS URL
+### Step 5.2 - Build TTS URL
 
 1. Drag a **function** node onto the canvas and connect it to the mqtt-in output
 2. Name it `Build TTS URL`
@@ -484,8 +537,6 @@ if (newOrders.length === 1) {
 
 var encoded = encodeURIComponent(text);
 msg.url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encoded;
-msg.headers = { 'User-Agent': 'Mozilla/5.0' };
-msg.method = 'GET';
 
 return msg;
 ```
@@ -497,7 +548,7 @@ This function does three things:
 - Compares against previously announced orders (stored in flow context) to find only new ones
 - Builds a natural language sentence and constructs the Google TTS URL
 
-### Step 4.3 - Fetch the Audio
+### Step 5.3 - Fetch the Audio
 
 1. Drag an **http request** node and connect it after the function
 2. Double-click and configure:
@@ -508,7 +559,7 @@ This function does three things:
 
 This node calls Google Translate TTS and returns raw MP3 audio in `msg.payload`.
 
-### Step 4.4 - Build the Upload Request
+### Step 5.4 - Build the Upload Request
 
 1. Drag another **function** node and connect it after the HTTP request
 2. Name it `Build Upload`
@@ -539,7 +590,7 @@ return msg;
 
 4. Click **Done**
 
-### Step 4.5 - Upload to Speaker
+### Step 5.5 - Upload to Speaker
 
 1. Drag an **http request** node and connect it after Build Upload
 2. Configure:
@@ -551,7 +602,7 @@ return msg;
 3. Replace `<speaker-ip>` with your speaker's IP address
 4. Click **Done**
 
-### Step 4.6 - Parse Clip ID and Play
+### Step 5.6 - Parse Clip ID and Play
 
 1. Drag a **function** node and connect it after the upload HTTP node
 2. Name it `Parse Clip ID & Play`
@@ -578,7 +629,7 @@ return null;
 4. Replace `<speaker-ip>` with your speaker's IP address
 5. Click **Done**
 
-### Step 4.7 - Play the Clip
+### Step 5.7 - Play the Clip
 
 1. Drag a final **http request** node and connect it after the function
 2. Configure:
@@ -590,7 +641,7 @@ return null;
 3. Click **Done**
 4. Optionally add a **debug** node at the end to see the play response
 
-### Step 4.8 - Deploy and Test
+### Step 5.8 - Deploy and Test
 
 1. Click **Deploy**
 2. The MQTT broker is already publishing ready orders from the simulator
@@ -614,70 +665,19 @@ mosquitto_pub -h 10.129.174.38 -p 1883 -t "restaurant/ready" -m "[99, 100]"
 
 ---
 
-## Part 5: Customize the Display
-
-Now that you have a working system, experiment with the visual presentation.
-
-### 4.1 - Change Colors
-
-1. Double-click **Build queue message**
-2. Edit the `backgroundColor` and `textColor` fields. Values are RGB hex strings:
-   - Dark blue (current): `#1A1A2E`
-   - Try navy: `#003366`, purple: `#4B0082`, dark green: `#1B4332`
-3. Click **Done** then **Deploy**
-
-Try changing the ready alert colors in **Build ready message** too. Keep it high contrast (dark text on bright background or vice versa) for readability.
-
-### 4.2 - Change Scroll Behavior
-
-In either function node, modify these fields:
-
-| Field | Options |
-|---|---|
-| `scrollSpeed` | `0` (static) through `10` (fastest) |
-| `scrollDirection` | `fromRightToLeft`, `fromLeftToRight`, `fromBottomToTop` |
-| `textSize` | `small`, `medium`, `large` |
-
-Try setting `scrollSpeed` to `0` to get a static display (useful if the text is short enough to fit on screen).
-
-### 4.3 - Change the Message Format
-
-Edit the `text` variable in the function node:
-- Change `'PREPARING:  '` to `'NOW COOKING:  '` or `'IN PROGRESS:  '`
-- Change `'ORDER READY:  '` to `'PICK UP:  '`
-
-### 4.4 - Change the Ready Alert Duration
-
-1. Double-click **Build ready message**
-2. Find `}, 8000);` in the setTimeout call - change `8000` to your preferred duration in milliseconds (e.g. `5000` for 5 seconds, `15000` for 15 seconds)
-3. Also update `duration: { type: 'time', value: 8000 }` to match
-4. Click **Done** then **Deploy**
-
-### 4.5 - Add a Static Prefix
-
-Try displaying a restaurant name before the queue. In **Build queue message**, change the text line to:
-
-```javascript
-text = 'CAFE AXIS  |  PREPARING:  ' + numbers.map(function(n) {
-    return '#' + n;
-}).join('  ');
-```
-
----
-
 ## Part 6: Display Air Quality Data on the Speaker
 
 Combine both workshops. Pull live air quality data from the D6310 sensors (already flowing through the MQTT broker from Workshop 1) and show it on your speaker.
 
 > Before starting: right-click the **Queue Display** tab and select **Disable**, then click **Deploy**. This prevents the queue flow from overwriting the air quality display while you work on it. You can re-enable it later.
 
-### Step 5.1 - Create a New Flow Tab
+### Step 6.1 - Create a New Flow Tab
 
 1. Click the **+** button to create another new flow tab
 2. Name it `Air Quality Display`
 3. Click **Done**
 
-### Step 5.2 - Add the MQTT Subscription
+### Step 6.2 - Add the MQTT Subscription
 
 1. Drag an **mqtt in** node onto the canvas
 2. Double-click and configure:
@@ -703,7 +703,7 @@ This subscribes to all four D6310 sensors. To show only one sensor, replace `+` 
 | Server Rack | E827251AA4C6 |
 | Entrance | E827251A8AF7 |
 
-### Step 5.3 - Add a Rate Limiter
+### Step 6.3 - Add a Rate Limiter
 
 The D6310 sensors publish every second. The speaker display does not need updates that fast - it would cause visual flickering and unnecessary API calls.
 
@@ -717,7 +717,7 @@ The D6310 sensors publish every second. The speaker display does not need update
 
 Wire: `[D6310 Air Quality] --> [Rate limit (1 per 30s)]`
 
-### Step 5.4 - Add the Format Function
+### Step 6.4 - Add the Format Function
 
 1. Drag a **function** node onto the canvas
 2. Name it `Format AQ message`
@@ -753,7 +753,7 @@ return msg;
 - We extract `AQI`, `CO2`, and `Temperature` from the payload
 - We format everything into a single scrolling display string
 
-### Step 5.5 - Add the HTTP Request Node
+### Step 6.5 - Add the HTTP Request Node
 
 1. Drag an **http request** node onto the canvas
 2. Configure it identically to the one you built in Part 2:
@@ -766,7 +766,7 @@ return msg;
    - **Return**: `a parsed JSON object`
 3. Click **Done**
 
-### Step 5.6 - Add a Debug Node and Wire Everything
+### Step 6.6 - Add a Debug Node and Wire Everything
 
 1. Add a **debug** node named `API response`
 2. Wire the full chain:
@@ -775,7 +775,7 @@ return msg;
 [D6310 Air Quality] --> [Rate limit (1 per 30s)] --> [Format AQ message] --> [POST to speaker display] --> [API response]
 ```
 
-### Step 5.7 - Deploy and Test
+### Step 6.7 - Deploy and Test
 
 1. Click **Deploy**
 2. Wait up to 30 seconds (the rate limiter will drop messages until the first one passes through)
@@ -787,7 +787,7 @@ return msg;
 
 > **Note:** If you re-enabled the Queue Display tab, both flows will compete for the speaker. Whichever message arrives last "wins." To test one flow at a time, right-click the other tab and select **Disable**, then **Deploy**.
 
-### Step 5.8 - Customize the Air Quality Display
+### Step 6.8 - Customize the Air Quality Display
 
 Try these modifications:
 
@@ -811,9 +811,9 @@ var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  [' + 
 
 ---
 
-## Part 7: Challenge - Conditional Formatting
+## Part 7: Challenge - Conditional Formatting (Bonus)
 
-For those who finish early: make the air quality display change color based on the AQI value.
+> For those who finish early: make the air quality display change color based on the AQI value.
 
 ### Goal
 
@@ -848,8 +848,8 @@ if (aqi <= 50) {
 
 If you get stuck or want to verify your work, pre-built flow files are included in this repository:
 
-- `queue_display_flow.json` - the complete queue display from Parts 2-3
-- `tts_announcement_flow.json` - the voice announcement flow from Part 4
+- `queue_display_flow.json` - the complete queue display from Parts 2-4
+- `tts_announcement_flow.json` - the voice announcement flow from Part 5
 - `aq_display_flow.json` - the complete air quality display from Part 6
 
 To import: Node-RED menu (☰) > **Import** > **Upload** > select the file > **Import**
@@ -947,10 +947,11 @@ Full reference: https://developer.axis.com/vapix/device-configuration/speaker-di
 
 ## What You've Built
 
-- **Task 1:** A live queue display that reacts instantly to order state changes over MQTT
-- **Task 2:** A voice announcement system using cloud TTS and the speaker's audio playback API
-- **Task 3:** A customized display tuned to your visual preferences
-- **Task 4:** A unified IoT data pipeline bridging two Axis sensor systems through a single MQTT broker onto one display
+- **Part 2:** A live queue display that reacts instantly to order state changes over MQTT
+- **Part 3:** A customized display tuned to your visual preferences
+- **Part 4:** A coordinated alert system using flow context and timers
+- **Part 5:** A voice announcement system using cloud TTS and the speaker's audio playback API
+- **Part 6:** A unified IoT data pipeline bridging two Axis sensor systems through a single MQTT broker onto one display
 
 ---
 
