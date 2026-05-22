@@ -401,6 +401,8 @@ The **Build ready message** output connects to the same **POST to speaker displa
    - The display turns **green** with `ORDER READY: #N`
    - After 8 seconds it reverts to the blue queue scroll
 
+![Completed ready alert flow](images/flow-ready-alert.png)
+
 **Checkpoint:** Both the queue display and the ready alert are working. The display alternates between the two states automatically.
 
 ---
@@ -573,6 +575,8 @@ return msg;
 3. In the debug panel you should see the API response from the speaker
 4. Your speaker should display something like:  
    `AQI: 12   CO2: 487 ppm   Temp: 21.4°C`
+
+![Completed air quality flow](images/flow-air-quality.png)
 
 > **Note:** If you re-enabled the Queue Display tab, both flows will compete for the speaker. Whichever message arrives last "wins." To test one flow at a time, right-click the other tab and select **Disable**, then **Deploy**.
 
