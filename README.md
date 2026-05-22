@@ -422,17 +422,17 @@ The visual alert is great, but what if staff aren't watching the screen? In this
 ### How It Works
 
 ```
-queue/ready  -->  Build TTS URL  -->  Google TTS  -->  Upload MP3  -->  Play Clip
-                  (function)          (HTTP GET)       (HTTP POST)      (HTTP GET)
+restaurant/ready  -->  Build TTS URL  -->  Google TTS  -->  Upload MP3  -->  Play Clip
+                       (function)          (HTTP GET)       (HTTP POST)      (HTTP GET)
 ```
 
-The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch a speech MP3 from Google Translate, upload it to the device, then trigger playback.
+The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch a speech MP3 from Google Translate, upload it to the device, then trigger playback. The function tracks which orders have already been announced so you only hear new ones.
 
 ### Step 4.1 - Add MQTT Input
 
 1. Drag an **mqtt in** node onto the canvas (you can create this on the same flow tab or a new one)
 2. Double-click and configure:
-   - **Topic:** `queue/ready`
+   - **Topic:** `restaurant/ready`
    - **Broker:** select your existing broker (10.129.174.38:1883)
    - **Output:** String
 3. Click **Done**
@@ -444,11 +444,46 @@ The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch
 3. Paste this code:
 
 ```javascript
-const orderNumber = msg.payload;
-const text = `Order number ${orderNumber} is ready for pickup`;
-const encoded = encodeURIComponent(text);
+// Parse JSON array of ready order numbers
+var readyOrders;
+try {
+    readyOrders = JSON.parse(msg.payload);
+} catch(e) {
+    readyOrders = [msg.payload];
+}
 
-msg.url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encoded}`;
+// Skip empty arrays
+if (!Array.isArray(readyOrders) || readyOrders.length === 0) {
+    return null;
+}
+
+// Get previously announced orders from flow context
+var announced = flow.get('announcedOrders') || [];
+
+// Find only NEW orders (not yet announced)
+var newOrders = readyOrders.filter(function(order) {
+    return announced.indexOf(order) === -1;
+});
+
+// If no new orders, stop
+if (newOrders.length === 0) {
+    return null;
+}
+
+// Save current ready list as announced
+flow.set('announcedOrders', readyOrders);
+
+// Build announcement text
+var text;
+if (newOrders.length === 1) {
+    text = 'Order number ' + newOrders[0] + ' is ready for pickup';
+} else {
+    var last = newOrders.pop();
+    text = 'Orders ' + newOrders.join(', ') + ' and ' + last + ' are ready for pickup';
+}
+
+var encoded = encodeURIComponent(text);
+msg.url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encoded;
 msg.headers = { 'User-Agent': 'Mozilla/5.0' };
 msg.method = 'GET';
 
@@ -456,6 +491,11 @@ return msg;
 ```
 
 4. Click **Done**
+
+This function does three things:
+- Parses the JSON array of order numbers
+- Compares against previously announced orders (stored in flow context) to find only new ones
+- Builds a natural language sentence and constructs the Google TTS URL
 
 ### Step 4.3 - Fetch the Audio
 
@@ -557,10 +597,17 @@ return null;
 4. Test manually by publishing: open a terminal and run:
 
 ```bash
-mosquitto_pub -h 10.129.174.38 -p 1883 -t "queue/ready" -m "99"
+mosquitto_pub -h 10.129.174.38 -p 1883 -t "restaurant/ready" -m "[99]"
 ```
 
-**Checkpoint:** The speaker both displays AND announces ready orders. The display shows the green visual alert while the speaker plays the voice announcement simultaneously.
+5. Publish the same message again - it should stay **silent** (order 99 was already announced)
+6. Add a new order to the list - only the new one is spoken:
+
+```bash
+mosquitto_pub -h 10.129.174.38 -p 1883 -t "restaurant/ready" -m "[99, 100]"
+```
+
+**Checkpoint:** The speaker both displays AND announces ready orders. Only new orders trigger a voice announcement - repeated messages are suppressed.
 
 > **Note:** Google Translate TTS is a free unofficial endpoint. It works well for short phrases but may rate-limit under heavy use. For production deployments, consider a dedicated TTS service.
 

@@ -1,5 +1,33 @@
 [
     {
+        "id": "workshop-mqtt-broker",
+        "type": "mqtt-broker",
+        "name": "Workshop MQTT",
+        "broker": "10.129.174.38",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "closeTopic": "",
+        "willTopic": "",
+        "birthQos": "0",
+        "closeQos": "0",
+        "willQos": "0",
+        "birthPayload": "",
+        "closePayload": "",
+        "willPayload": "",
+        "birthMsg": {},
+        "closeMsg": {},
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
         "id": "workshop-tts-flow",
         "type": "tab",
         "label": "TTS Announcement",
@@ -10,8 +38,8 @@
         "id": "tts-mqtt-in",
         "type": "mqtt in",
         "z": "workshop-tts-flow",
-        "name": "queue/ready",
-        "topic": "queue/ready",
+        "name": "restaurant/ready",
+        "topic": "restaurant/ready",
         "qos": "0",
         "datatype": "utf8",
         "broker": "workshop-mqtt-broker",
@@ -21,14 +49,18 @@
         "inputs": 0,
         "x": 130,
         "y": 200,
-        "wires": [["tts-build-url"]]
+        "wires": [
+            [
+                "tts-build-url"
+            ]
+        ]
     },
     {
         "id": "tts-build-url",
         "type": "function",
         "z": "workshop-tts-flow",
         "name": "Build TTS URL",
-        "func": "const orderNumber = msg.payload;\nconst text = `Order number ${orderNumber} is ready for pickup`;\nconst encoded = encodeURIComponent(text);\n\nmsg.url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encoded}`;\nmsg.headers = { 'User-Agent': 'Mozilla/5.0' };\nmsg.method = 'GET';\n\nreturn msg;",
+        "func": "// Parse JSON array of ready order numbers\nvar readyOrders;\ntry {\n    readyOrders = JSON.parse(msg.payload);\n} catch(e) {\n    readyOrders = [msg.payload];\n}\n\n// Skip empty arrays\nif (!Array.isArray(readyOrders) || readyOrders.length === 0) {\n    return null;\n}\n\n// Get previously announced orders from flow context\nvar announced = flow.get('announcedOrders') || [];\n\n// Find only NEW orders (not yet announced)\nvar newOrders = readyOrders.filter(function(order) {\n    return announced.indexOf(order) === -1;\n});\n\n// If no new orders, stop\nif (newOrders.length === 0) {\n    return null;\n}\n\n// Save all current ready orders as announced\nflow.set('announcedOrders', readyOrders);\n\n// Build announcement text\nvar text;\nif (newOrders.length === 1) {\n    text = 'Order number ' + newOrders[0] + ' is ready for pickup';\n} else {\n    var last = newOrders.pop();\n    text = 'Orders ' + newOrders.join(', ') + ' and ' + last + ' are ready for pickup';\n}\n\nvar encoded = encodeURIComponent(text);\nmsg.url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encoded;\nmsg.headers = { 'User-Agent': 'Mozilla/5.0' };\nmsg.method = 'GET';\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -37,7 +69,11 @@
         "libs": [],
         "x": 330,
         "y": 200,
-        "wires": [["tts-http-google"]]
+        "wires": [
+            [
+                "tts-http-google"
+            ]
+        ]
     },
     {
         "id": "tts-http-google",
@@ -57,7 +93,11 @@
         "headers": [],
         "x": 520,
         "y": 200,
-        "wires": [["tts-build-upload"]]
+        "wires": [
+            [
+                "tts-build-upload"
+            ]
+        ]
     },
     {
         "id": "tts-build-upload",
@@ -73,7 +113,11 @@
         "libs": [],
         "x": 720,
         "y": 200,
-        "wires": [["tts-http-upload"]]
+        "wires": [
+            [
+                "tts-http-upload"
+            ]
+        ]
     },
     {
         "id": "tts-http-upload",
@@ -91,13 +135,13 @@
         "authType": "digest",
         "senderr": false,
         "headers": [],
-        "credentials": {
-            "user": "root",
-            "password": "pass"
-        },
         "x": 930,
         "y": 200,
-        "wires": [["tts-parse-clip-id"]]
+        "wires": [
+            [
+                "tts-parse-clip-id"
+            ]
+        ]
     },
     {
         "id": "tts-parse-clip-id",
@@ -113,7 +157,11 @@
         "libs": [],
         "x": 1160,
         "y": 200,
-        "wires": [["tts-http-play"]]
+        "wires": [
+            [
+                "tts-http-play"
+            ]
+        ]
     },
     {
         "id": "tts-http-play",
@@ -131,13 +179,13 @@
         "authType": "digest",
         "senderr": false,
         "headers": [],
-        "credentials": {
-            "user": "root",
-            "password": "pass"
-        },
         "x": 1370,
         "y": 200,
-        "wires": [["tts-debug"]]
+        "wires": [
+            [
+                "tts-debug"
+            ]
+        ]
     },
     {
         "id": "tts-debug",
