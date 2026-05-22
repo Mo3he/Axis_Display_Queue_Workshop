@@ -296,9 +296,10 @@ The ready alert temporarily overrides the queue display with a green "ORDER READ
 
 ### Step 4.2 - Add the Ready Message Function Node
 
-1. Drag a **function** node next to the Ready topic node
-2. Name it `Build ready message`
-3. Paste this code:
+1. Drag a **function** node onto the canvas, to the right of the Ready topic node
+2. Wire: drag from the output of **Ready topic** to the input of this new function node
+3. Double-click the function node, set **Name** to `Build ready message`
+4. Paste this code:
 
 ```javascript
 var numbers = msg.payload;
@@ -372,7 +373,7 @@ msg.payload = {
 return msg;
 ```
 
-4. Click **Done**
+5. Click **Done**
 
 **Understanding the code:**
 - When orders are ready, we show a green banner with the order numbers
@@ -432,15 +433,19 @@ return null;
 - `flow.set('queueText', text)` - stores the latest queue text in flow-level shared context. Think of this as a variable that lives on the tab, accessible by any function node via `flow.get('queueText')`.
 - `if (!flow.get('showingReady'))` - checks whether the ready alert is active. If it is, we still save the queue text (so it is available for revert) but return `null`, which tells Node-RED not to pass the message onward.
 
-### Step 4.4 - Wire the Ready Nodes
+### Step 4.4 - Wire the Ready Output to the Speaker
 
-Wire the ready row:
+Now connect **Build ready message** to the existing **POST to speaker display** node:
+
+1. Drag a wire from the output of **Build ready message** to the input of **POST to speaker display**
+
+Your ready row should now look like:
 
 ```
 [Ready topic] --> [Build ready message] --> [POST to speaker display]
 ```
 
-The **Build ready message** output connects to the same **POST to speaker display** node that the queue function already uses. Multiple nodes can feed into one node.
+Multiple nodes can feed into one node - both the queue function and the ready function now share the same HTTP request node.
 
 ### Step 4.5 - Deploy and Test
 
@@ -707,21 +712,21 @@ This subscribes to all four D6310 sensors. To show only one sensor, replace `+` 
 
 The D6310 sensors publish every second. The speaker display does not need updates that fast - it would cause visual flickering and unnecessary API calls.
 
-1. Drag a **delay** node onto the canvas
-2. Double-click and configure:
+1. Drag a **delay** node onto the canvas, to the right of the MQTT node
+2. Wire: drag from the output of **D6310 Air Quality** to the input of this delay node
+3. Double-click and configure:
    - **Name**: `Rate limit (1 per 30s)`
    - **Action**: select `Rate Limit`
    - **Rate**: `1` msg(s) per `30` `Seconds`
    - Check **drop intermediate messages**
-3. Click **Done**
-
-Wire: `[D6310 Air Quality] --> [Rate limit (1 per 30s)]`
+4. Click **Done**
 
 ### Step 6.4 - Add the Format Function
 
-1. Drag a **function** node onto the canvas
-2. Name it `Format AQ message`
-3. Paste this code:
+1. Drag a **function** node onto the canvas, to the right of the rate limiter
+2. Wire: drag from the output of **Rate limit (1 per 30s)** to the input of this function node
+3. Double-click it and set **Name** to `Format AQ message`
+4. Paste this code:
 
 ```javascript
 var raw = msg.payload;
@@ -746,7 +751,7 @@ msg.payload = {
 return msg;
 ```
 
-4. Click **Done**
+5. Click **Done**
 
 **Understanding the code:**
 - The D6310 sends data in a nested structure - we try multiple possible paths to find it
@@ -755,8 +760,9 @@ return msg;
 
 ### Step 6.5 - Add the HTTP Request Node
 
-1. Drag an **http request** node onto the canvas
-2. Configure it identically to the one you built in Part 2:
+1. Drag an **http request** node onto the canvas, to the right of the function node
+2. Wire: drag from the output of **Format AQ message** to the input of this HTTP node
+3. Configure it identically to the one you built in Part 2:
    - **Name**: `POST to speaker display`
    - **Method**: `POST`
    - **URL**: `http://<your-speaker-ip>/config/rest/speaker-display-notification/v1/simple`
@@ -766,10 +772,14 @@ return msg;
    - **Return**: `a parsed JSON object`
 3. Click **Done**
 
-### Step 6.6 - Add a Debug Node and Wire Everything
+### Step 6.6 - Add a Debug Node
 
-1. Add a **debug** node named `API response`
-2. Wire the full chain:
+1. Drag a **debug** node to the right of the HTTP request node
+2. Wire: drag from the output of **POST to speaker display** to the input of the debug node
+3. Double-click it and set **Name** to `API response`
+4. Click **Done**
+
+Your completed flow should look like:
 
 ```
 [D6310 Air Quality] --> [Rate limit (1 per 30s)] --> [Format AQ message] --> [POST to speaker display] --> [API response]
