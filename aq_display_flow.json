@@ -59,7 +59,7 @@
         "type": "function",
         "z": "aq-display-flow",
         "name": "Format AQ message",
-        "func": "var raw = msg.payload;\nvar data = raw.data || (raw.message && raw.message.data) || raw;\nvar aqi  = Number(data['AQI']         || 0).toFixed(0);\nvar co2  = Number(data['CO2']         || 0).toFixed(0);\nvar temp = Number(data['Temperature'] || 0).toFixed(1);\n// Pull the serial from the topic: axis/<SERIAL>/event/...\nvar sensorSerial = msg.topic.split('/')[1] || 'unknown';\nvar text = 'AQI: ' + aqi + '   CO2: ' + co2 + ' ppm   Temp: ' + temp + '\u00b0C   [' + sensorSerial + ']';\nmsg.payload = {\n    data: {\n        message: text,\n        textColor: '#FFFFFF',\n        backgroundColor: '#2D1B69',\n        textSize: 'large',\n        scrollDirection: 'fromRightToLeft',\n        scrollSpeed: 4\n    }\n};\nreturn msg;",
+        "func": "var raw = msg.payload;\nvar data = raw.data || (raw.message && raw.message.data) || raw;\nvar aqi  = Number(data['AQI']         || 0).toFixed(0);\nvar co2  = Number(data['CO2']         || 0).toFixed(0);\nvar temp = Number(data['Temperature'] || 0).toFixed(1);\nvar text = 'AQI: ' + aqi + '   CO2: ' + co2 + ' ppm   Temp: ' + temp + '\u00b0C';\nmsg.payload = {\n    data: {\n        message: text,\n        textColor: '#FFFFFF',\n        backgroundColor: '#2D1B69',\n        textSize: 'large',\n        scrollDirection: 'fromRightToLeft',\n        scrollSpeed: 4\n    }\n};\nreturn msg;",
         "outputs": 1,
         "x": 570,
         "y": 160,

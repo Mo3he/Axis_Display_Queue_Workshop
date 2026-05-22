@@ -500,10 +500,7 @@ var aqi  = Number(data['AQI']         || 0).toFixed(0);
 var co2  = Number(data['CO2']         || 0).toFixed(0);
 var temp = Number(data['Temperature'] || 0).toFixed(1);
 
-// Extract the sensor serial from the MQTT topic: axis/<SERIAL>/event/...
-var sensorSerial = msg.topic.split('/')[1] || 'unknown';
-
-var text = 'AQI: ' + aqi + '   CO2: ' + co2 + ' ppm   Temp: ' + temp + '°C   [' + sensorSerial + ']';
+var text = 'AQI: ' + aqi + '   CO2: ' + co2 + ' ppm   Temp: ' + temp + '°C';
 
 msg.payload = {
     data: {
@@ -523,7 +520,6 @@ return msg;
 **Understanding the code:**
 - The D6310 sends data in a nested structure - we try multiple possible paths to find it
 - We extract `AQI`, `CO2`, and `Temperature` from the payload
-- We pull the sensor serial from the MQTT topic string (second segment after splitting by `/`)
 - We format everything into a single scrolling display string
 
 ### Step 5.5 - Add the HTTP Request Node
@@ -554,7 +550,7 @@ return msg;
 2. Wait up to 30 seconds (the rate limiter will drop messages until the first one passes through)
 3. In the debug panel you should see the API response from the speaker
 4. Your speaker should display something like:  
-   `AQI: 12   CO2: 487 ppm   Temp: 21.4°C   [E827251A7B09]`
+   `AQI: 12   CO2: 487 ppm   Temp: 21.4°C`
 
 > **Note:** The air quality display and the queue display will both try to write to the same speaker. Whichever message arrives last "wins." You can disable one flow tab (right-click the tab, select "Disable") while testing the other.
 
