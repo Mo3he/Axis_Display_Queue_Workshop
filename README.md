@@ -142,9 +142,6 @@ if (!Array.isArray(numbers) || numbers.length === 0) {
     }).join('  ');
 }
 
-// Save the current queue text so other nodes can reference it later
-flow.set('queueText', text);
-
 msg.payload = {
     data: {
         message: text,
@@ -163,7 +160,6 @@ return msg;
 **Understanding the code:**
 - `msg.payload` arrives as a JSON array like `[3, 7, 12]` from the MQTT node
 - We format it into a string like `PREPARING:  #3  #7  #12`
-- `flow.set('queueText', text)` stores a value in Node-RED's flow-level context. Think of it as a shared variable that any function node on this tab can read with `flow.get('queueText')`. We use this so the "ready" logic can later retrieve the last known queue text and revert the display to it.
 - We build the payload object that the VAPIX API expects: message text, colors, size, scroll settings
 
 ### Step 2.6 - Add the HTTP Request Node (POST to Speaker)
@@ -320,10 +316,15 @@ return msg;
 
 ### Step 3.3 - Update the Queue Function to Respect the Ready Flag
 
-Now you need to modify **Build queue message** so it does not overwrite the ready alert while it is showing.
+Now you need to modify **Build queue message** so it coordinates with the ready alert. Two changes are needed:
+
+1. Save the queue text into shared flow context so the ready node can retrieve it when reverting
+2. Skip sending to the display if a ready alert is currently showing
+
+Open **Build queue message** and replace the code with this updated version:
 
 1. Double-click **Build queue message**
-2. Replace the code with this updated version:
+2. Replace the entire code with:
 
 ```javascript
 var numbers = msg.payload;
@@ -337,7 +338,9 @@ if (!Array.isArray(numbers) || numbers.length === 0) {
     }).join('  ');
 }
 
-// Save the current queue text so the ready node can revert to it
+// Save the current queue text into flow context.
+// flow.set() stores a value that any function node on this tab can
+// read with flow.get(). The ready node uses this to revert the display.
 flow.set('queueText', text);
 
 // Only send to display if we are not currently showing a ready alert
@@ -359,7 +362,9 @@ return null;
 
 3. Click **Done**
 
-> The key change: we now check `flow.get('showingReady')` before sending to the display. If a ready alert is active, we still save the latest queue text but return `null` (which tells Node-RED not to pass the message onward).
+**What changed:**
+- `flow.set('queueText', text)` - stores the latest queue text in flow-level shared context. Think of this as a variable that lives on the tab, accessible by any function node via `flow.get('queueText')`.
+- `if (!flow.get('showingReady'))` - checks whether the ready alert is active. If it is, we still save the queue text (so it is available for revert) but return `null`, which tells Node-RED not to pass the message onward.
 
 ### Step 3.4 - Wire the Ready Nodes
 
@@ -439,6 +444,8 @@ text = 'CAFE AXIS  |  PREPARING:  ' + numbers.map(function(n) {
 ## Part 5: Display Air Quality Data on the Speaker
 
 Combine both workshops. Pull live air quality data from the D6310 sensors (already flowing through the MQTT broker from Workshop 1) and show it on your speaker.
+
+> Before starting: right-click the **Queue Display** tab and select **Disable**, then click **Deploy**. This prevents the queue flow from overwriting the air quality display while you work on it. You can re-enable it later.
 
 ### Step 5.1 - Create a New Flow Tab
 
@@ -552,7 +559,7 @@ return msg;
 4. Your speaker should display something like:  
    `AQI: 12   CO2: 487 ppm   Temp: 21.4°C`
 
-> **Note:** The air quality display and the queue display will both try to write to the same speaker. Whichever message arrives last "wins." You can disable one flow tab (right-click the tab, select "Disable") while testing the other.
+> **Note:** If you re-enabled the Queue Display tab, both flows will compete for the speaker. Whichever message arrives last "wins." To test one flow at a time, right-click the other tab and select **Disable**, then **Deploy**.
 
 ### Step 5.8 - Customize the Air Quality Display
 
@@ -568,6 +575,13 @@ var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  Humid
 **Change the update frequency** - double-click the rate limit node and change `30` seconds to `10` seconds for more frequent updates (or `60` for less).
 
 **Change colors** - the current deep purple (`#2D1B69`) makes it visually distinct from the queue display. Try other colors to match the reading severity (e.g. green for good AQI, orange for moderate).
+
+**Add the sensor identifier** - if you want to show which room the reading is from, extract the serial from the MQTT topic and append it:
+
+```javascript
+var sensorSerial = msg.topic.split('/')[1] || 'unknown';
+var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  [' + sensorSerial + ']';
+```
 
 ---
 
