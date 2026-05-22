@@ -415,7 +415,158 @@ The **Build ready message** output connects to the same **POST to speaker displa
 
 ---
 
-## Part 4: Customize the Display
+## Part 4: Voice Announcement (Text-to-Speech)
+
+The visual alert is great, but what if staff aren't watching the screen? In this part you will add an audio announcement that reads the order number aloud through the speaker. The approach uses a free Google Translate TTS endpoint to generate speech, uploads the audio clip to the speaker, then plays it.
+
+### How It Works
+
+```
+queue/ready  -->  Build TTS URL  -->  Google TTS  -->  Upload MP3  -->  Play Clip
+                  (function)          (HTTP GET)       (HTTP POST)      (HTTP GET)
+```
+
+The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch a speech MP3 from Google Translate, upload it to the device, then trigger playback.
+
+### Step 4.1 - Add MQTT Input
+
+1. Drag an **mqtt in** node onto the canvas (you can create this on the same flow tab or a new one)
+2. Double-click and configure:
+   - **Topic:** `queue/ready`
+   - **Broker:** select your existing broker (10.129.174.38:1883)
+   - **Output:** String
+3. Click **Done**
+
+### Step 4.2 - Build TTS URL
+
+1. Drag a **function** node onto the canvas and connect it to the mqtt-in output
+2. Name it `Build TTS URL`
+3. Paste this code:
+
+```javascript
+const orderNumber = msg.payload;
+const text = `Order number ${orderNumber} is ready for pickup`;
+const encoded = encodeURIComponent(text);
+
+msg.url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encoded}`;
+msg.headers = { 'User-Agent': 'Mozilla/5.0' };
+msg.method = 'GET';
+
+return msg;
+```
+
+4. Click **Done**
+
+### Step 4.3 - Fetch the Audio
+
+1. Drag an **http request** node and connect it after the function
+2. Double-click and configure:
+   - **Method:** GET
+   - **URL:** leave blank (set by `msg.url`)
+   - **Return:** a binary buffer
+3. Click **Done**
+
+This node calls Google Translate TTS and returns raw MP3 audio in `msg.payload`.
+
+### Step 4.4 - Build the Upload Request
+
+1. Drag another **function** node and connect it after the HTTP request
+2. Name it `Build Upload`
+3. Paste this code:
+
+```javascript
+const boundary = '----NodeREDFormBoundary';
+const filename = 'tts_announcement.mp3';
+
+// Wrap MP3 binary in a multipart form body
+const header = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
+    `Content-Type: audio/mpeg\r\n\r\n`
+);
+const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
+
+msg.payload = Buffer.concat([header, msg.payload, footer]);
+msg.headers = {
+    'Content-Type': `multipart/form-data; boundary=${boundary}`
+};
+msg.url = 'http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=upload';
+msg.method = 'POST';
+
+return msg;
+```
+
+4. Replace `<speaker-ip>` with your speaker's IP address
+5. Click **Done**
+
+### Step 4.5 - Upload to Speaker
+
+1. Drag an **http request** node and connect it after Build Upload
+2. Configure:
+   - **Method:** POST
+   - **URL:** leave blank (set by msg.url)
+   - **Return:** a UTF-8 string
+   - **Authentication:** Digest
+   - **Username / Password:** your speaker credentials
+3. Click **Done**
+
+### Step 4.6 - Parse Clip ID and Play
+
+1. Drag a **function** node and connect it after the upload HTTP node
+2. Name it `Parse Clip ID & Play`
+3. Paste this code:
+
+```javascript
+// Response is "OK\nUploaded=3" or "OK\nReplaced=3"
+const response = msg.payload;
+const match = response.match(/(?:Uploaded|Replaced)=(\d+)/);
+
+if (match) {
+    const clipId = match[1];
+    msg.url = `http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=play&clip=${clipId}`;
+    msg.method = 'GET';
+    msg.headers = {};
+    msg.payload = null;
+    return msg;
+}
+
+node.error('Failed to parse clip ID from: ' + response);
+return null;
+```
+
+4. Replace `<speaker-ip>` with your speaker's IP address
+5. Click **Done**
+
+### Step 4.7 - Play the Clip
+
+1. Drag a final **http request** node and connect it after the function
+2. Configure:
+   - **Method:** GET
+   - **URL:** leave blank
+   - **Return:** a UTF-8 string
+   - **Authentication:** Digest
+   - **Username / Password:** your speaker credentials
+3. Click **Done**
+4. Optionally add a **debug** node at the end to see the play response
+
+### Step 4.8 - Deploy and Test
+
+1. Click **Deploy**
+2. The MQTT broker is already publishing ready orders from the simulator
+3. When the next ready order arrives, you should hear the speaker say the order number aloud
+4. Test manually by publishing: open a terminal and run:
+
+```bash
+mosquitto_pub -h 10.129.174.38 -p 1883 -t "queue/ready" -m "99"
+```
+
+**Checkpoint:** The speaker both displays AND announces ready orders. The display shows the green visual alert while the speaker plays the voice announcement simultaneously.
+
+> **Note:** Google Translate TTS is a free unofficial endpoint. It works well for short phrases but may rate-limit under heavy use. For production deployments, consider a dedicated TTS service.
+
+---
+
+## Part 5: Customize the Display
 
 Now that you have a working system, experiment with the visual presentation.
 
@@ -466,7 +617,7 @@ text = 'CAFE AXIS  |  PREPARING:  ' + numbers.map(function(n) {
 
 ---
 
-## Part 5: Display Air Quality Data on the Speaker
+## Part 6: Display Air Quality Data on the Speaker
 
 Combine both workshops. Pull live air quality data from the D6310 sensors (already flowing through the MQTT broker from Workshop 1) and show it on your speaker.
 
@@ -612,7 +763,7 @@ var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  [' + 
 
 ---
 
-## Part 6: Challenge - Conditional Formatting
+## Part 7: Challenge - Conditional Formatting
 
 For those who finish early: make the air quality display change color based on the AQI value.
 
@@ -650,7 +801,8 @@ if (aqi <= 50) {
 If you get stuck or want to verify your work, pre-built flow files are included in this repository:
 
 - `queue_display_flow.json` - the complete queue display from Parts 2-3
-- `aq_display_flow.json` - the complete air quality display from Part 5
+- `tts_announcement_flow.json` - the voice announcement flow from Part 4
+- `aq_display_flow.json` - the complete air quality display from Part 6
 
 To import: Node-RED menu (☰) > **Import** > **Upload** > select the file > **Import**
 
@@ -667,7 +819,9 @@ You will still need to configure the broker address and speaker credentials afte
 | Speaker shows nothing | Verify the speaker IP in the URL of the POST node |
 | API response shows 401 | Wrong username or password in the POST node credentials |
 | API response shows 404 | Wrong URL path - confirm it ends in `/v1/simple` |
-| Display not updating on Part 5 | Wait up to 30 s for the rate limiter to pass a message through |
+| Display not updating on Part 6 | Wait up to 30 s for the rate limiter to pass a message through |
+| TTS not playing | Check debug output - verify Google TTS returns binary data, not an error page |
+| Upload returns "Unsupported Media Type" | Ensure the audio is actual MP3 (not AAC or empty) |
 | Digest auth error | Axis speakers require HTTP Digest - confirm the POST node auth type is set to **Digest** |
 | Function node shows error | Open the function node and check the code - look for typos or missing semicolons |
 | Wire won't connect | Make sure you are dragging from an output (right side) to an input (left side) |
@@ -746,8 +900,9 @@ Full reference: https://developer.axis.com/vapix/device-configuration/speaker-di
 ## What You've Built
 
 - **Task 1:** A live queue display that reacts instantly to order state changes over MQTT
-- **Task 2:** A customized display tuned to your visual preferences
-- **Task 3:** A unified IoT data pipeline bridging two Axis sensor systems through a single MQTT broker onto one display
+- **Task 2:** A voice announcement system using cloud TTS and the speaker's audio playback API
+- **Task 3:** A customized display tuned to your visual preferences
+- **Task 4:** A unified IoT data pipeline bridging two Axis sensor systems through a single MQTT broker onto one display
 
 ---
 
