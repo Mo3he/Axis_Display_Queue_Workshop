@@ -73,6 +73,8 @@ You will build the entire flow by hand, node by node. This teaches you how Node-
 
 The data flows left to right: broker publishes an array like `[3, 7, 12]`, your function formats it into display text, and the HTTP node delivers it to the speaker.
 
+![Completed queue display flow](images/flow-complete.png)
+
 ### Step 2.1 - Create a New Flow Tab
 
 1. Open Node-RED: http://localhost:1880
@@ -103,6 +105,8 @@ Continuing from the MQTT node you just opened:
 2. Set **Topic** to `restaurant/queue`
 3. Set **QoS** to `1`
 4. Set **Output** to `a parsed JSON object`
+
+![MQTT node configuration](images/mqtt-node-config.png)
 5. Click **Done**
 
 The node should appear on your canvas with the label "Queue topic".
@@ -162,6 +166,8 @@ return msg;
 - We format it into a string like `PREPARING:  #3  #7  #12`
 - We build the payload object that the VAPIX API expects: message text, colors, size, scroll settings
 
+![Function node editor](images/function-editor.png)
+
 ### Step 2.6 - Add the HTTP Request Node (POST to Speaker)
 
 This node sends the formatted payload to your speaker.
@@ -205,6 +211,8 @@ Click from the output (right dot) of each node to the input (left dot) of the ne
    - The formatted payload object in **Queue debug** (the `data.message` field should read something like `PREPARING:  #3  #7  #12`)
    - The API response in **API response** (should be a `200` status with a success body)
 3. Look at your speaker - it should be scrolling something like `PREPARING:  #3  #7  #12`
+
+![Debug panel showing messages flowing](images/debug-panel.png)
 
 **Checkpoint:** Your speaker is now showing the live queue. If the API response shows an error, check:
 - `401` = wrong credentials
