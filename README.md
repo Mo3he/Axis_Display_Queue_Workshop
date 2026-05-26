@@ -96,7 +96,7 @@ Before adding MQTT nodes, you need to configure the broker connection that your 
 
 1. From the left palette, drag an **mqtt in** node onto the canvas
 2. Double-click the node to open its settings
-3. Click the pencil icon (✎) next to the **Server** dropdown to add a new broker
+3. Click the add icon (+) next to the **Server** dropdown to add a new broker
 4. In the **Connection** tab:
    - **Name**: `Workshop Broker`
    - **Server**: `10.129.174.38`
@@ -145,7 +145,7 @@ Now you will write the logic that transforms the raw queue array into a display 
 
 1. Drag a **function** node onto the canvas, between the MQTT node and the debug node
 2. Double-click it and set **Name** to `Build queue message`
-3. In the **Function** tab (the code editor), paste the following code:
+3. In the **Function** tab (the code editor), paste the following code (replace whats already there):
 
 ```javascript
 var numbers = msg.payload;
@@ -189,9 +189,9 @@ This node sends the formatted payload to your speaker.
 2. Double-click it and configure:
    - **Name**: `POST to speaker display`
    - **Method**: `POST`
-   - **URL**: `http://<your-speaker-ip>/config/rest/speaker-display-notification/v1/simple`  
-     (replace `<your-speaker-ip>` with your actual IP)
-   - **Payload**: select `Ignore`
+   - **URL**:`http://<your-speaker-ip>/config/rest/speaker-display-notification/v1/simple`  
+ (replace `<your-speaker-ip>` with your actual IP)
+   - **Use authentication**: enabled
    - **Authentication**: select `digest authentication`  
      (Axis devices use Digest auth rather than Basic auth. Digest never sends your password in cleartext - it uses a challenge-response handshake instead.)
    - **Username**: your speaker username
@@ -199,39 +199,13 @@ This node sends the formatted payload to your speaker.
    - **Return**: select `a parsed JSON object`
 3. Click **Done**
 
-![HTTP request node configuration](images/http-request-config.png)
+![HTTP request node configuration](images/http-request-config.png)  
 
-### Step 2.7 - Add a Response Debug Node
 
-1. Drag another **debug** node to the right of the HTTP request node
-2. Name it `API response`
-3. Click **Done**
-
-### Step 2.8 - Wire the Nodes Together
-
-Delete the old wire from the MQTT node to the debug node (click the wire, press Delete).
-
-Now wire the nodes. Debug nodes are terminal (they display messages but do not forward them), so you need to branch the output of the function node to both the debug and the HTTP request:
-
-```
-                                          +--> [Queue debug]
-[Queue topic] --> [Build queue message] --+
-                                          +--> [POST to speaker display] --> [API response]
-```
-
-To create this fan-out wiring:
-1. Click the output (right dot) of **Build queue message** and drag to the input of **POST to speaker display**
-2. Click the output of **Build queue message** again and drag a second wire to the input of **Queue debug**
-3. Click the output of **POST to speaker display** and drag to the input of **API response**
-
-You now have two debug nodes: **Queue debug** shows the formatted payload you are sending, and **API response** shows what the speaker replied.
-
-### Step 2.9 - Deploy and Test the Queue Display
+### Step 2.7 - Deploy and Test the Queue Display
 
 1. Click **Deploy**
-2. Watch the **Debug** panel - you should see:
-   - The formatted payload object in **Queue debug** (the `data.message` field should read something like `PREPARING:  #3  #7  #12`)
-   - The API response in **API response** (should be a `200` status with a success body)
+2. Watch the **Debug** panel - The status should read "success"
 3. Look at your speaker - it should be scrolling something like `PREPARING:  #3  #7  #12`
 
 ![Debug panel showing messages flowing](images/debug-panel.png)
@@ -457,10 +431,7 @@ Multiple nodes can feed into one node - both the queue function and the ready fu
 ### Step 4.5 - Deploy and Test
 
 1. Click **Deploy**
-2. Watch the debug panel. You should see:
-   - Queue messages continuing to flow
-   - Occasional ready messages (the simulator fires them every 20-30 seconds)
-3. When a ready message arrives:
+2. When a ready message arrives:
    - The display turns **green** with `ORDER READY: #N`
    - After 8 seconds it reverts to the blue queue scroll
 
@@ -498,9 +469,10 @@ The speaker can store and play audio clips via its `mediaclip.cgi` API. We fetch
 1. Drag an **mqtt in** node onto the canvas (you can create this on the same flow tab or a new one)
 2. Double-click and configure:
    - **Topic:** `restaurant/ready`
-   - **Broker:** select your existing broker (10.129.174.38:1883)
-   - **Output:** String
-3. Click **Done**
+   - **Broker:** select your existing broker (Workshop Broker)
+   - **QoS*** 1
+   - **Output:** a String
+4. Click **Done**
 
 ### Step 5.2 - Build TTS URL
 
@@ -658,22 +630,12 @@ return null;
 1. Click **Deploy**
 2. The MQTT broker is already publishing ready orders from the simulator
 3. When the next ready order arrives, you should hear the speaker say the order number aloud
-4. Test manually by publishing: open a terminal and run:
-
-```bash
-mosquitto_pub -h 10.129.174.38 -p 1883 -t "restaurant/ready" -m "[99]"
-```
-
-5. Publish the same message again - it should stay **silent** (order 99 was already announced)
-6. Add a new order to the list - only the new one is spoken:
-
-```bash
-mosquitto_pub -h 10.129.174.38 -p 1883 -t "restaurant/ready" -m "[99, 100]"
-```
 
 **Checkpoint:** The speaker both displays AND announces ready orders. Only new orders trigger a voice announcement - repeated messages are suppressed.
 
 > **Note:** Google Translate TTS is a free unofficial endpoint. It works well for short phrases but may rate-limit under heavy use. For production deployments, consider a dedicated TTS service.
+
+![Completed TTS alert flow](images/TTS.png)
 
 ---
 
@@ -773,7 +735,6 @@ return msg;
    - **Name**: `POST to speaker display`
    - **Method**: `POST`
    - **URL**: `http://<your-speaker-ip>/config/rest/speaker-display-notification/v1/simple`
-   - **Payload**: `Ignore`
    - **Authentication**: `digest authentication`
    - **Username** / **Password**: your speaker credentials
    - **Return**: `a parsed JSON object`
