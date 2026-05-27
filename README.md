@@ -30,7 +30,9 @@ restaurant/ready  -->  Node-RED  -->  ORDER READY:  #2  #5        (black on gree
 
 - Axis Display Speaker (factory defaulted, one per participant)
 - AXIS IP Utility (already installed)
-- Node-RED already running at http://localhost:1880 from Workshop 1
+- Node-RED already running at http://localhost:1880 from Workshop 1  
+- If you did not do workshop one and just want to quickly get started with node-red run the following in terminal (this requires Docker)
+```docker run -it -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red```
 
 ---
 
