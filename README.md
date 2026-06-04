@@ -703,11 +703,11 @@ The D6310 sensors publish every second. The speaker display does not need update
 var raw = msg.payload;
 var data = raw.data || (raw.message && raw.message.data) || raw;
 
-var aqi  = Number(data['AQI']         || 0).toFixed(0);
+var aqi  = Number(data['AQI']         || 0);
 var co2  = Number(data['CO2']         || 0).toFixed(0);
 var temp = Number(data['Temperature'] || 0).toFixed(1);
 
-var text = 'AQI: ' + aqi + '   CO2: ' + co2 + ' ppm   Temp: ' + temp + '°C';
+var text = 'AQI: ' + aqi.toFixed(0) + '   CO2: ' + co2 + ' ppm   Temp: ' + temp + '°C';
 
 msg.payload = {
     data: {
@@ -775,7 +775,7 @@ Try these modifications:
 
 ```javascript
 var humidity = Number(data['Humidity'] || 0).toFixed(0);
-var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  Humidity: ' + humidity + '%';
+var text = 'AQI: ' + aqi.toFixed(0) + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  Humidity: ' + humidity + '%';
 ```
 
 **Change the update frequency** - double-click the rate limit node and change `30` seconds to `10` seconds for more frequent updates (or `60` for less).
@@ -786,7 +786,7 @@ var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  Humid
 
 ```javascript
 var sensorSerial = msg.topic.split('/')[1] || 'unknown';
-var text = 'AQI: ' + aqi + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  [' + sensorSerial + ']';
+var text = 'AQI: ' + aqi.toFixed(0) + '  CO2: ' + co2 + ' ppm  Temp: ' + temp + '°C  [' + sensorSerial + ']';
 ```
 
 ---
