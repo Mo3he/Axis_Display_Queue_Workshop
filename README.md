@@ -6,6 +6,8 @@ In this hands-on workshop you will build a live information display system using
 
 The scenario is a restaurant order queue: customers place orders, the kitchen prepares them, and the display keeps everyone informed. Along the way you will learn how VAPIX works, how to coordinate multiple data sources with flow context, and how to repurpose the same pattern for sensor data.
 
+For more information on the simulated queue system and other examples of how to solve the use case see https://github.com/Mo3he/axis-display-queue
+
 ---
 
 Build a restaurant-style order queue system from scratch in Node-RED. You will subscribe to live queue state over MQTT and drive an Axis Display Speaker using the VAPIX Speaker Display Notification API.
