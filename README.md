@@ -8,7 +8,7 @@ The scenario is a restaurant order queue: customers place orders, the kitchen pr
 
 > This workshop was written for a hosted session at the Axis TTC, but you can run it on your own network with your own speaker. See [Running This Workshop on Your Own](#running-this-workshop-on-your-own).
 >
-> The queue simulator comes from [axis-display-queue](https://github.com/Mo3he/axis-display-queue), which also has four ready-made ways to drive the display: a Python script, an ACAP that runs on the speaker itself (no external host needed), an import-and-go Node-RED flow, and a shell script.
+> The queue simulator comes from [axis-display-queue](https://github.com/Mo3he/axis-display-queue). See [Going Further](#going-further) for other ways to drive the display, including an ACAP that runs on the speaker itself.
 
 ---
 
@@ -957,6 +957,19 @@ Full reference: https://developer.axis.com/vapix/device-configuration/speaker-di
 - **Part 4:** A coordinated alert system using flow context and timers
 - **Part 5:** A voice announcement system using cloud TTS and the speaker's audio playback API
 - **Part 6:** A unified IoT data pipeline bridging two Axis sensor systems through a single MQTT broker onto one display
+
+## Going Further
+
+Node-RED is one way to solve this. [axis-display-queue](https://github.com/Mo3he/axis-display-queue) has the same queue display built four ways, all using the same simulator and VAPIX API:
+
+| | Python script | ACAP | Node-RED | Shell script |
+|---|---|---|---|---|
+| Runs on | Any machine with Python | The speaker itself | Any machine with Node-RED | Any Linux/macOS host |
+| Needs a separate computer | Yes | **No** | Yes | Yes |
+| Setup effort | Low | Medium (build + install) | Low | Low |
+| Best for | Dev/testing, always-on servers | Production, standalone | Non-developers, prototyping | Scripting pipelines |
+
+The ACAP is the natural next step for a real deployment: a pre-built `.eap` is included, it installs on the speaker, and its settings (broker, topics, ready duration) are edited from the speaker's web interface. No Node-RED or other computer needs to stay running.
 
 ---
 
