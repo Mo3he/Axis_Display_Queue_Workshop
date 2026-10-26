@@ -6,7 +6,9 @@ In this hands-on workshop you will build a live information display system using
 
 The scenario is a restaurant order queue: customers place orders, the kitchen prepares them, and the display keeps everyone informed. Along the way you will learn how VAPIX works, how to coordinate multiple data sources with flow context, and how to repurpose the same pattern for sensor data.
 
-> This workshop was written for a hosted session at the Axis TTC, but you can run it on your own network with your own speaker. See [Running This Workshop on Your Own](#running-this-workshop-on-your-own). For other ways to solve the same use case, see [axis-display-queue](https://github.com/Mo3he/axis-display-queue).
+> This workshop was written for a hosted session at the Axis TTC, but you can run it on your own network with your own speaker. See [Running This Workshop on Your Own](#running-this-workshop-on-your-own).
+>
+> The queue simulator comes from [axis-display-queue](https://github.com/Mo3he/axis-display-queue), which also has four ready-made ways to drive the display: a Python script, an ACAP that runs on the speaker itself (no external host needed), an import-and-go Node-RED flow, and a shell script.
 
 ---
 
