@@ -969,7 +969,7 @@ Node-RED is one way to solve this. [axis-display-queue](https://github.com/Mo3he
 | Setup effort | Low | Medium (build + install) | Low | Low |
 | Best for | Dev/testing, always-on servers | Production, standalone | Non-developers, prototyping | Scripting pipelines |
 
-The ACAP is the natural next step for a real deployment: a pre-built `.eap` is included, it installs on the speaker, and its settings (broker, topics, ready duration) are edited from the speaker's web interface. No Node-RED or other computer needs to stay running.
+The ACAP is the natural next step for a real deployment: a pre-built `.eap` is included (aarch64, AXIS OS 12+), it installs on the speaker, and its settings (broker, topics, ready duration) are edited from the speaker's web interface. No Node-RED or other computer needs to stay running.
 
 ---
 
