@@ -96,9 +96,9 @@ Press `Ctrl+C` to stop. The simulator clears retained messages on exit.
 
 ### 5. Update the Workshop Broker Address
 
-In the workshop README, replace `10.129.174.38` with your broker's IP address in:
-- Step 2.2 (MQTT broker configuration)
-- Step 5.2 (only relevant if you also have D6310 sensors)
+In the workshop README, replace `10.129.174.38` with your broker's IP address in Step 2.2 (MQTT broker configuration). All later MQTT nodes reuse that broker.
+
+If you import the flow JSON files instead, update the broker address in them too.
 
 ## What It Publishes
 

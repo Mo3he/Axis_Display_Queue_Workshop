@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+
+# Local screenshot tooling for README images
+package.json
+package-lock.json
+take_screenshots.js
+
+# Simulator virtualenv
+.venv/
+__pycache__/

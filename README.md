@@ -2,11 +2,13 @@
 
 ## Introduction
 
-In this hands-on workshop you will build a live information display system using an Axis network speaker with a built-in screen. Starting from a blank Node-RED canvas, you will wire together MQTT subscriptions, data formatting logic, and HTTP API calls to push real-time content to the display. No pre-built flows are provided - you will construct every node and connection yourself.
+In this hands-on workshop you will build a live information display system using an Axis network speaker with a built-in screen. Starting from a blank Node-RED canvas, you will wire together MQTT subscriptions, data formatting logic, and HTTP API calls to push real-time content to the display. You will construct every node and connection yourself. Finished flows are included in the repository only as a reference if you get stuck.
 
 The scenario is a restaurant order queue: customers place orders, the kitchen prepares them, and the display keeps everyone informed. Along the way you will learn how VAPIX works, how to coordinate multiple data sources with flow context, and how to repurpose the same pattern for sensor data.
 
 For more information on the simulated queue system and other examples of how to solve the use case see https://github.com/Mo3he/axis-display-queue
+
+> This workshop was written for a hosted session at the Axis TTC, but you can run it on your own network with your own speaker. See [Running This Workshop on Your Own](#running-this-workshop-on-your-own).
 
 ---
 
@@ -31,10 +33,29 @@ restaurant/ready  -->  Node-RED  -->  ORDER READY:  #2  #5        (black on gree
 ## Prerequisites
 
 - Axis Display Speaker (factory defaulted, one per participant)
-- AXIS IP Utility (already installed)
-- Node-RED already running at http://localhost:1880 from Workshop 1  
+- AXIS IP Utility (already installed at the TTC, otherwise available from axis.com)
+- Node-RED running at http://localhost:1880 (TTC participants already have this from Workshop 1)  
 - If you did not do workshop one and just want to quickly get started with node-red run the following in terminal (this requires Docker)
 ```docker run -it -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red```
+
+---
+
+## Running This Workshop on Your Own
+
+At the TTC the MQTT broker, the order simulator and the air quality sensors are already running. Outside the TTC you provide them yourself:
+
+| At the TTC | On your own |
+|---|---|
+| MQTT broker at `10.129.174.38:1883` | Run your own broker (e.g. Mosquitto) and use its address wherever this guide says `10.129.174.38` |
+| Order simulator run by the workshop host | Run the [queue simulator](simulator/README.md) included in this repository |
+| Node-RED set up in Workshop 1 | Install Node-RED yourself (see Prerequisites) |
+| AXIS D6310 air quality sensors (Part 6-7) | Optional. Use your own D6310 publishing to your broker, or skip Parts 6-7 |
+| One speaker per participant | Any Axis network speaker with a built-in display |
+
+Quick start:
+
+1. Start a broker and the simulator as described in [simulator/README.md](simulator/README.md). The "faster demo" timing there makes testing much quicker.
+2. Follow the guide from Part 1, replacing `10.129.174.38` with your broker's address.
 
 ---
 
@@ -66,7 +87,7 @@ Before building anything in Node-RED, confirm the VAPIX Display API is reachable
 3. Enter your credentials when prompted
 4. You should get a JSON response (even if it is an error about method not allowed) - this confirms the endpoint is accessible
 
-> If you get a connection timeout, double-check the IP address. If you get a 404, your speaker firmware may need updating - ask the workshop host.
+> If you get a connection timeout, double-check the IP address. If you get a 404, your speaker firmware may need updating (at the TTC, ask the workshop host).
 
 ---
 
@@ -647,6 +668,8 @@ return null;
 
 Combine both workshops. Pull live air quality data from the D6310 sensors (already flowing through the MQTT broker from Workshop 1) and show it on your speaker.
 
+> Not at the TTC? You need an AXIS D6310 with its MQTT client publishing air quality events to your broker. If you don't have one, skip to the Reference section.
+
 > Before starting: right-click the **Queue Display** tab and select **Disable**, then click **Deploy**. This prevents the queue flow from overwriting the air quality display while you work on it. You can re-enable it later.
 
 ### Step 6.1 - Create a New Flow Tab
@@ -672,7 +695,7 @@ Combine both workshops. Pull live air quality data from the D6310 sensors (alrea
 - `event/tns:axis/AirQualityMonitor/Metadata/#` - the air quality event path
 - `#` - multi-level wildcard for sub-topics
 
-This subscribes to all four D6310 sensors. To show only one sensor, replace `+` with its serial:
+At the TTC this subscribes to all four D6310 sensors. To show only one sensor, replace `+` with its serial (use your own sensor's serial outside the TTC):
 
 | Location | Serial |
 |---|---|
@@ -836,7 +859,7 @@ If you get stuck or want to verify your work, pre-built flow files are included 
 
 To import: Node-RED menu (☰) > **Import** > **Upload** > select the file > **Import**
 
-You will still need to configure the broker address and speaker credentials after importing.
+You will still need to configure the broker address, speaker IP and speaker credentials after importing.
 
 ---
 
@@ -844,8 +867,8 @@ You will still need to configure the broker address and speaker credentials afte
 
 | Symptom | Check |
 |---|---|
-| MQTT nodes show "disconnected" | Verify broker address is `10.129.174.38`, port `1883`, no TLS |
-| No messages in debug panel | Confirm the simulator is running - ask your workshop host |
+| MQTT nodes show "disconnected" | Verify broker address is `10.129.174.38` (or your own broker), port `1883`, no TLS |
+| No messages in debug panel | Confirm the simulator is running (at the TTC, ask your workshop host) |
 | Speaker shows nothing | Verify the speaker IP in the URL of the POST node |
 | API response shows 401 | Wrong username or password in the POST node credentials |
 | API response shows 404 | Wrong URL path - confirm it ends in `/v1/simple` |
@@ -917,7 +940,7 @@ Full reference: https://developer.axis.com/vapix/device-configuration/speaker-di
 | `restaurant/queue` | `[3, 7, 12]` | JSON array of order numbers being prepared |
 | `restaurant/ready` | `[2, 5]` | JSON array of order numbers ready for pickup |
 
-### D6310 Air Quality Topics (Workshop 1)
+### D6310 Air Quality Topics (TTC sensors, Workshop 1)
 
 | Topic | Description |
 |---|---|
@@ -937,4 +960,4 @@ Full reference: https://developer.axis.com/vapix/device-configuration/speaker-di
 
 ---
 
-Developed for the Axis TTC Workshop
+Developed for the Axis TTC Workshop. To run it elsewhere, see [Running This Workshop on Your Own](#running-this-workshop-on-your-own).
