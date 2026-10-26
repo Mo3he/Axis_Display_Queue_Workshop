@@ -6,9 +6,7 @@ In this hands-on workshop you will build a live information display system using
 
 The scenario is a restaurant order queue: customers place orders, the kitchen prepares them, and the display keeps everyone informed. Along the way you will learn how VAPIX works, how to coordinate multiple data sources with flow context, and how to repurpose the same pattern for sensor data.
 
-For more information on the simulated queue system and other examples of how to solve the use case see https://github.com/Mo3he/axis-display-queue
-
-> This workshop was written for a hosted session at the Axis TTC, but you can run it on your own network with your own speaker. See [Running This Workshop on Your Own](#running-this-workshop-on-your-own).
+> This workshop was written for a hosted session at the Axis TTC, but you can run it on your own network with your own speaker. See [Running This Workshop on Your Own](#running-this-workshop-on-your-own). For other ways to solve the same use case, see [axis-display-queue](https://github.com/Mo3he/axis-display-queue).
 
 ---
 
