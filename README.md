@@ -575,21 +575,14 @@ This node calls Google Translate TTS and returns raw MP3 audio in `msg.payload`.
 3. Paste this code:
 
 ```javascript
-var boundary = "----NodeREDFormBoundary";
-var filename = "tts_announcement.mp3";
-
-// Wrap MP3 binary in a multipart form body
-var header = Buffer.from(
-    "--" + boundary + "\r\n" +
-    "Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n" +
-    "Content-Type: audio/mpeg\r\n\r\n"
-);
-var footer = Buffer.from("\r\n--" + boundary + "--\r\n");
-
-msg.payload = Buffer.concat([header, msg.payload, footer]);
-msg.headers = {
-    "Content-Type": "multipart/form-data; boundary=" + boundary
+// Describe the MP3 as a file - the http request node builds the upload form from this
+msg.payload = {
+    file: {
+        value: msg.payload,
+        options: { filename: "tts_announcement.mp3", contentType: "audio/mpeg" }
+    }
 };
+msg.headers = { "Content-Type": "multipart/form-data" };
 
 // Clear stale url from previous node
 delete msg.url;
@@ -604,12 +597,15 @@ return msg;
 1. Drag an **http request** node and connect it after Build Upload
 2. Configure:
    - **Method:** POST
-   - **URL:** `http://<speaker-ip>/axis-cgi/mediaclip.cgi?action=upload`
+   - **URL:** `https://<speaker-ip>/axis-cgi/mediaclip.cgi?action=upload` (note **https**)
+   - Tick **Enable secure (SSL/TLS) connection**, then next to **TLS Configuration** click the pencil to add a new one. Untick **Verify server certificate** and click **Add**
    - **Return:** a UTF-8 string
-   - **Authentication:** Digest
+   - Tick **Use authentication**, **Type:** basic authentication
    - **Username / Password:** your speaker credentials
 3. Replace `<speaker-ip>` with your speaker's IP address
 4. Click **Done**
+
+> **Why HTTPS and Basic here, when Part 2 used Digest?** Digest login needs two attempts: the speaker answers the first with "please log in", and Node-RED sends the request again. An uploaded file can only be sent once, so the login has to succeed on the first try. Basic does that, and the speaker only accepts Basic over HTTPS, which keeps the password encrypted. The speaker uses its own self-signed certificate, which is why certificate verification is turned off.
 
 ### Step 5.6 - Parse Clip ID and Play
 
@@ -872,10 +868,12 @@ You will still need to configure the broker address, speaker IP and speaker cred
 | Speaker shows nothing | Verify the speaker IP in the URL of the POST node |
 | API response shows 401 | Wrong username or password in the POST node credentials |
 | API response shows 404 | Wrong URL path - confirm it ends in `/v1/simple` |
+| Upload to Speaker fails with `ECONNRESET` / "server aborted pending request" | Check the upload node uses `https://`, **basic** authentication and a TLS config, and that **Build Upload** matches Step 5.4 |
+| Upload to Speaker fails with "Cannot retry with consumed body stream" | The upload node is set to Digest. Change it to **basic** authentication over `https://` (Step 5.5) |
 | Display not updating on Part 6 | Wait up to 30 s for the rate limiter to pass a message through |
 | TTS not playing | Check debug output - verify Google TTS returns binary data, not an error page |
 | Upload returns "Unsupported Media Type" | Ensure the audio is actual MP3 (not AAC or empty) |
-| Digest auth error | Axis speakers require HTTP Digest - confirm the POST node auth type is set to **Digest** |
+| Digest auth error | Axis speakers require HTTP Digest over plain HTTP - confirm the POST node auth type is set to **Digest** (the Part 5 upload node is the exception: basic over HTTPS) |
 | Function node shows error | Open the function node and check the code - look for typos or missing semicolons |
 | Wire won't connect | Make sure you are dragging from an output (right side) to an input (left side) |
 | Multiple ready alerts stacking | The `clearTimeout` logic should prevent this - check that `flow.set('revertTimer', timer)` is saving the timer reference |
